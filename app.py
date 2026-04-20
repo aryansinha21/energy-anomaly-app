@@ -460,58 +460,69 @@ else:
         else:
             df_display = st.session_state.df.copy()
         
-        # Filtering options
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            rows_to_show = st.slider(
-                "Rows to display:",
-                min_value=10,
-                max_value=len(df_display),
-                value=min(50, len(df_display)),
-                step=10
-            )
-        
-        with col2:
-            if 'anomaly' in df_display.columns:
-                anomaly_filter = st.multiselect(
-                    "Filter by anomaly:",
-                    [0, 1],
-                    default=[0, 1],
-                    format_func=lambda x: "Normal" if x == 0 else "Anomaly"
-                )
-                df_display = df_display[df_display['anomaly'].isin(anomaly_filter)]
-        
-        with col3:
-            sort_col = st.selectbox(
-                "Sort by:",
-                df_display.columns.tolist(),
-                index=0
-            )
-        
-        df_display = df_display.sort_values(by=sort_col).head(rows_to_show)
-        
-        # Display with styling
-        st.dataframe(df_display, use_container_width=True)
-        
-        # Summary Statistics
-        if show_stats:
-            st.markdown("### 📊 Summary Statistics")
+        # Check if dataframe is empty
+        if len(df_display) == 0:
+            st.warning("No data available. Please check your filters or upload data.")
+        else:
+            # Filtering options
+            col1, col2, col3 = st.columns(3)
             
-            numeric_cols = df_display.select_dtypes(include=[np.number]).columns
-            stats_df = df_display[numeric_cols].describe().T
-            st.dataframe(stats_df, use_container_width=True)
-        
-        # Download button
-        st.markdown("### 💾 Download Data")
-        
-        csv = df_display.to_csv(index=False)
-        st.download_button(
-            label="Download as CSV",
-            data=csv,
-            file_name="energy_data_with_predictions.csv",
-            mime="text/csv"
-        )
+            with col1:
+                rows_to_show = st.slider(
+                    "Rows to display:",
+                    min_value=10,
+                    max_value=len(df_display),
+                    value=min(50, len(df_display)),
+                    step=10
+                )
+            
+            with col2:
+                if 'anomaly' in df_display.columns:
+                    anomaly_filter = st.multiselect(
+                        "Filter by anomaly:",
+                        [0, 1],
+                        default=[0, 1],
+                        format_func=lambda x: "Normal" if x == 0 else "Anomaly"
+                    )
+                    df_display = df_display[df_display['anomaly'].isin(anomaly_filter)]
+            
+            # Check again after anomaly filter
+            if len(df_display) == 0:
+                st.warning("No data matches the selected anomaly filter.")
+            else:
+                with col3:
+                    sort_col = st.selectbox(
+                        "Sort by:",
+                        df_display.columns.tolist(),
+                        index=0
+                    )
+                
+                df_display = df_display.sort_values(by=sort_col).head(rows_to_show)
+                
+                # Display with styling
+                st.dataframe(df_display, use_container_width=True)
+                
+                # Summary Statistics
+                if show_stats:
+                    st.markdown("### 📊 Summary Statistics")
+                    
+                    numeric_cols = df_display.select_dtypes(include=[np.number]).columns
+                    if len(numeric_cols) > 0:
+                        stats_df = df_display[numeric_cols].describe().T
+                        st.dataframe(stats_df, use_container_width=True)
+                    else:
+                        st.info("No numeric columns available for statistics.")
+                
+                # Download button
+                st.markdown("### 💾 Download Data")
+                
+                csv = df_display.to_csv(index=False)
+                st.download_button(
+                    label="Download as CSV",
+                    data=csv,
+                    file_name="energy_data_with_predictions.csv",
+                    mime="text/csv"
+                )
     
     # ===========================
     # TAB 3: VISUALIZATION
