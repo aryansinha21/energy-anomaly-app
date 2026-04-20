@@ -26,14 +26,16 @@ def handle_missing_values(df, method='interpolate'):
         DataFrame with missing values handled
     """
     df_copy = df.copy()
+    numeric_cols = df_copy.select_dtypes(include=[np.number]).columns
     
     if method == 'interpolate':
-        df_copy = df_copy.interpolate(method='linear', limit_direction='both')
+        # Only interpolate numeric columns
+        df_copy[numeric_cols] = df_copy[numeric_cols].interpolate(method='linear', limit_direction='both')
     elif method == 'forward_fill':
-        df_copy = df_copy.fillna(method='ffill').fillna(method='bfill')
+        # Forward fill for all columns, then back fill
+        df_copy = df_copy.ffill().bfill()
     elif method == 'mean':
         imputer = SimpleImputer(strategy='mean')
-        numeric_cols = df_copy.select_dtypes(include=[np.number]).columns
         df_copy[numeric_cols] = imputer.fit_transform(df_copy[numeric_cols])
     
     return df_copy
